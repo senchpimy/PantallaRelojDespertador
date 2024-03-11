@@ -1,0 +1,23 @@
+{
+  "name": "pantallareloj",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^1",
+    "fullcalendar": "^6.1.11",
+    "moment": "^2.30.1"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^3.0.1",
+    "@tauri-apps/cli": "^1",
+    "svelte": "^4.2.8",
+    "vite": "^5.0.0"
+  }
+}
