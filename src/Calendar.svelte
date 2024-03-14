@@ -1,8 +1,18 @@
 <script>
   import { onMount } from "svelte";
   import { Calendar } from "fullcalendar";
+  import { invoke } from "@tauri-apps/api/tauri";
 
-  function cal() {
+  let str = "";
+  async function get_cal_data() {
+    str = await invoke("get_cal_data", {});
+    let cal_data = JSON.parse(str);
+    return cal_data.events;
+  }
+
+  async function cal() {
+    let events = await get_cal_data();
+    console.log(events);
     const calendarEl = document.getElementById("calendar");
     const calendar = new Calendar(calendarEl, {
       initialView: "dayGridMonth",
@@ -12,24 +22,18 @@
         console.log(selected.start);
       },
 
-      events: [
-        {
-          title: "My Event",
-          start: "2024-03-01",
-        },
-      ],
+      events: events,
 
       eventMouseEnter: function (info) {
-        info.el.style.borderColor = "red"; //TODO cambiar Colores
+        //info.el.style.borderColor = "red"; //TODO cambiar Colores
       },
 
       eventMouseLeave: function (info) {
-        info.el.style.borderColor = "blue";
+        //info.el.style.borderColor = "blue";
       },
 
       eventClick: function (info) {
-        info.el.style.borderColor = "red";
-        console.log("AAAAAA");
+        //info.el.style.borderColor = "red";
       },
 
       customButtons: {

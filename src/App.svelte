@@ -1,47 +1,49 @@
 <script>
-  import Clock from "./Clock.svelte";
-  import Calendar from "./Calendar.svelte";
   import { onMount } from "svelte";
+  import Main from "./Main.svelte";
   let container;
   let currentSceneIndex = 1;
+  let scenes = [Main];
   onMount(() => {
     container = document.getElementById("scenes");
-    container.style.translate = `translateX(calc(-100vw * ${currentSceneIndex}))`;
+    let len = scenes.length;
+    container.style.width = `100 * ${len}vw`;
+    //container.style.translate = `translateX(calc(-100vw * ${currentSceneIndex}))`;
 
-    container.addEventListener("mousedown", (e) => {
-      isMouseDown = true;
-      startX = e.clientX;
-      currentX = startX;
-    });
+    //container.addEventListener("mousedown", (e) => {
+    //  isMouseDown = true;
+    //  startX = e.clientX;
+    //  currentX = startX;
+    //});
 
-    container.addEventListener("mousemove", (e) => {
-      if (!isMouseDown) return; // If mouse is not down, do nothing
+    //container.addEventListener("mousemove", (e) => {
+    //  if (!isMouseDown) return; // If mouse is not down, do nothing
 
-      const deltaX = e.clientX - currentX;
-      currentX = e.clientX;
+    //  const deltaX = e.clientX - currentX;
+    //  currentX = e.clientX;
 
-      container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex} + ${deltaX}px))`;
-    });
+    //  container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex} + ${deltaX}px))`;
+    //});
 
-    container.addEventListener("mouseup", () => {
-      if (!isMouseDown) return; // If mouse was not down, do nothing
-      isMouseDown = false;
+    //container.addEventListener("mouseup", () => {
+    //  if (!isMouseDown) return; // If mouse was not down, do nothing
+    //  isMouseDown = false;
 
-      const deltaX = currentX - startX;
+    //  const deltaX = currentX - startX;
 
-      if (deltaX > 100 && currentSceneIndex > 0) {
-        // Swipe left
-        currentSceneIndex--;
-        container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
-      } else if (deltaX < -100 && currentSceneIndex < 2) {
-        // Swipe right
-        currentSceneIndex++;
-        container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
-      } else {
-        // Return to original position
-        container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
-      }
-    });
+    //  if (deltaX > 100 && currentSceneIndex > 0) {
+    //    // Swipe left
+    //    currentSceneIndex--;
+    //    container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
+    //  } else if (deltaX < -100 && currentSceneIndex < 2) {
+    //    // Swipe right
+    //    currentSceneIndex++;
+    //    container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
+    //  } else {
+    //    // Return to original position
+    //    container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
+    //  }
+    //});
   });
 
   let startX = 0;
@@ -52,17 +54,10 @@
 
 <main class="container">
   <div class="scenes" id="scenes">
-    <div class="scene">
-      <h1>Scenea 1</h1>
-    </div>
-    <div class="scene">
-      <div class="division">
-        <Calendar />
-        <Clock />
+    {#each scenes as ElementListComponent}
+      <div class="scene">
+        <ElementListComponent />
       </div>
-    </div>
-    <div class="scene">
-      <h1>Scenea 2</h1>
-    </div>
+    {/each}
   </div>
 </main>

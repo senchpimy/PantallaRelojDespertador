@@ -1,6 +1,7 @@
 :root{
   background-color: #002b36;
   color: white;
+  overflow-y: hidden;
 }
 
 .clock {
@@ -8,6 +9,10 @@
   transition: all 1s ease-in-out;
   margin-left: auto;
   margin-right: auto;
+  height: fit-content;
+}
+.calendar_reduced{
+  display: none;
 }
 
 
@@ -19,6 +24,7 @@
 .calendar-container{
   transition: all 1s ease-in-out;
   width: 50%;
+  height: 95vh;
 }
 
 .division{
@@ -27,7 +33,7 @@
 
 .scenes {
   display: flex;
-  width: 300vw;
+  width: 100vw;
   /* Twice the viewport width to accommodate two scenes */
   transition: transform 0.5s ease;
   user-select: none
