@@ -25,6 +25,7 @@
   function handleClick() {
     document.getElementById("clock").classList.toggle("clock_expanded");
     document.getElementById("calendar").classList.toggle("calendar_reduced");
+    document.getElementById("lista").classList.toggle("lista_reduced");
   }
 </script>
 

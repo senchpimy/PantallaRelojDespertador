@@ -3,9 +3,8 @@
   import { Calendar } from "fullcalendar";
   import { invoke } from "@tauri-apps/api/tauri";
 
-  let str = "";
   async function get_cal_data() {
-    str = await invoke("get_cal_data", {});
+    let str = await invoke("get_cal_data", {});
     let cal_data = JSON.parse(str);
     return cal_data.events;
   }
