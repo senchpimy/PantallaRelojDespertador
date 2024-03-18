@@ -69,9 +69,17 @@
   margin-left: 1.5vw;
   margin-right:2vw;
 }
-.lista>ul>li{
+.lista>ul>li:first-child{
   text-align: left;
   border-color: white;
   border: 1px solid white;
+  padding: 1vh;
+}
+
+.lista>ul>li:not(:first-child){
+  text-align: left;
+  border-color: white;
+  border: 1px solid white;
+  border-top: 0px;
   padding: 1vh;
 }
