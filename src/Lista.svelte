@@ -1,7 +1,8 @@
 <script>
-  import { onMount } from "svelte";
+  import { onDestroy } from "svelte";
   import { get_cal_data } from "./utils";
-  var ElementsList = [];
+  let ElementsList = [];
+
   async function get_list() {
     ElementsList = await get_cal_data(false);
     for (let i = ElementsList.length - 1; i >= 0; i--) {
@@ -15,24 +16,36 @@
         if (!("date" in ElementsList[i])) {
           ElementsList[i].date = ElementsList[i].start.split("T")[0];
         }
+        const millis = Date.parse(ElementsList[i].date) - Date.now();
+        const days = Math.floor(millis / (1000 * 60 * 60 * 24)) + 1;
+        ElementsList[i].days_left = days;
       }
     }
   }
+
   get_list();
+  const updateData = async () => {
+    console.log("List updated");
+    await get_list();
+    ElementsList = [...ElementsList];
+  };
+
+  const interval = setInterval(updateData, 1000);
+
+  onDestroy(() => {
+    clearInterval(interval);
+  });
+
   function focus(node) {
     node.addEventListener("click", function () {
       var r = node.querySelector(".info");
       r.classList.toggle("info-show");
     });
   }
-  function color(node) {
-    var r = node.querySelector("#point");
-    console.log(r);
-  }
 </script>
 
 <div id="lista" class="lista">
-  <ul use:color>
+  <ul id="list-holder">
     {#each ElementsList as element}
       <li style="background-color:{element.color}" use:focus>
         {#if "ready" in element}
@@ -44,8 +57,11 @@
             {element.title}
           </div>
         {/if}
-        {element.date}
-        <div class="info">
+        <div style="display: flex;  justify-content: space-between;">
+          {element.date}
+          <div style="text-align: right;">{element.days_left} days left</div>
+        </div>
+        <div class="info info-show">
           {element.info}
         </div>
       </li>

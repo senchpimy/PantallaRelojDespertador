@@ -3,9 +3,10 @@
   import { Calendar } from "fullcalendar";
   import { get_cal_data } from "./utils";
 
+  const data = { events: [] };
   async function cal() {
-    let events = await get_cal_data(false);
-    events.forEach((element) => {
+    data.events = await get_cal_data(false);
+    data.events.forEach((element) => {
       if ("completed" in element) {
         if (element.completed) {
           element.color = "red";
@@ -21,7 +22,7 @@
         console.log(selected.start);
       },
 
-      events: events,
+      events: data.events,
 
       eventMouseEnter: function (info) {
         //info.el.style.borderColor = "red"; //TODO cambiar Colores
