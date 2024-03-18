@@ -70,6 +70,7 @@
   margin-right:2vw;
 }
 .lista>ul>li:first-child{
+  transition: all .5s ease;
   text-align: left;
   border-color: white;
   border: 1px solid white;
@@ -77,9 +78,29 @@
 }
 
 .lista>ul>li:not(:first-child){
+  transition: all .5s ease;
   text-align: left;
   border-color: white;
   border: 1px solid white;
   border-top: 0px;
   padding: 1vh;
+}
+
+.cumplido{
+  color: red;
+  text-decoration: line-through;
+}
+
+.lista_element{
+  font-size: 2vw;
+}
+
+.info{
+  color: white;
+  text-decoration: none;
+  font-size: 1vw;
+}
+
+.info-show{
+  display: none;
 }
