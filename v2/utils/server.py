@@ -7,7 +7,7 @@ from flask import Flask
 app = Flask(__name__)
 
 import os
-daysOfWeek={"R":0,"M":1,"T":2, "W":3 ,"U":4, "F":5,"S":6}
+daysOfWeek={"U":0,"M":1,"T":2, "W":3 ,"R":4, "F":5,"S":6}
 CONFIG_PATH = ".obsidian/plugins/obsidian-full-calendar/data.json"
 PATH = "/home/plof/Documents/4to-semstre-fes/4toSemestre/"
 
@@ -30,8 +30,10 @@ def update_db():
             with open(full, "r") as f:
                 contents = f.read()
                 matches = pattern.findall(contents)
-                if matches:
+                text = contents.split('\n---')[1][1::]
+                if matches: #Handle no matches
                     res:dict = yaml.safe_load(matches[0])
+                    res["info"]=text
                     for key in res: # Yaml returns as a date obj
                         if type(res[key] ) == date:
                             res[key] = res[key].strftime("%Y-%m-%d")
@@ -54,14 +56,16 @@ def update_db():
                             res["end"]=day+"T"+res["endTime"]+":00"
                             delete_keys(res)
                         elif type(res["startTime"])==int:
-                            hora = int(res["startTime"] / 60)
-                            min = int(res["startTime"] % 60)
-                            res["startTime"]= "{:02d}:{:02d}".format(hora,min)
-                            day = res["date"]
-                            nday = res["endDate"]
-                            res["start"]=day+"T"+res["startTime"]+":00"
-                            res["end"]=nday+"T"+res["endTime"]+":00"
-                            delete_keys(res)
+                            if type(res["endTime"])==str:
+                                hora = int(res["startTime"] / 60)
+                                min = int(res["startTime"] % 60)
+                                res["startTime"]= "{:02d}:{:02d}".format(hora,min)
+                                day = res["date"] ## Check if it exists
+                                nday = res["endDate"]
+                                res["start"]=day+"T"+res["startTime"]+":00"
+                                res["end"]=nday+"T"+res["endTime"]+":00"
+                                delete_keys(res)
+                    res["color"]=cal["color"]
                     arr["events"].append(res.copy())
     r = json.dumps(arr)
     return r
