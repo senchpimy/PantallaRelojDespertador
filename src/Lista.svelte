@@ -1,10 +1,10 @@
 <script>
   import { onDestroy } from "svelte";
-  import { get_cal_data } from "./utils";
+  import { get_cal_data, DATA_TIMEOUT } from "./utils";
   let ElementsList = [];
 
   async function get_list() {
-    ElementsList = await get_cal_data(false);
+    ElementsList = await get_cal_data();
     for (let i = ElementsList.length - 1; i >= 0; i--) {
       ElementsList[i].color += "26"; //RGBA
       if (ElementsList[i].type === "recurring") {
@@ -17,20 +17,23 @@
           ElementsList[i].date = ElementsList[i].start.split("T")[0];
         }
         const millis = Date.parse(ElementsList[i].date) - Date.now();
+
         const days = Math.floor(millis / (1000 * 60 * 60 * 24)) + 1;
         ElementsList[i].days_left = days;
+        if (ElementsList[i].completed && days <= 0) {
+          ElementsList.splice(i, 1);
+        }
       }
     }
   }
 
   get_list();
   const updateData = async () => {
-    console.log("List updated");
     await get_list();
     ElementsList = [...ElementsList];
   };
 
-  const interval = setInterval(updateData, 1000);
+  const interval = setInterval(updateData, DATA_TIMEOUT);
 
   onDestroy(() => {
     clearInterval(interval);

@@ -1,36 +1,21 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { Calendar } from "fullcalendar";
-  import { get_cal_data } from "./utils";
+  import { get_cal_data, DATA_TIMEOUT } from "./utils";
 
   const data = { events: [] };
-  async function cal() {
-    data.events = await get_cal_data(false);
-    data.events.forEach((element) => {
-      if ("completed" in element) {
-        if (element.completed) {
-          element.color = "red";
-        }
-      }
-    });
-    const calendarEl = document.getElementById("calendar");
-    const calendar = new Calendar(calendarEl, {
+  const calendar = { cal: null, element: null };
+
+  function crearCal(calendarEl) {
+    return new Calendar(calendarEl, {
       initialView: "dayGridMonth",
 
       selectable: true,
       select: function (selected) {
-        console.log(selected.start);
+        //console.log(selected.start);
       },
 
       events: data.events,
-
-      eventMouseEnter: function (info) {
-        //info.el.style.borderColor = "red"; //TODO cambiar Colores
-      },
-
-      eventMouseLeave: function (info) {
-        //info.el.style.borderColor = "blue";
-      },
 
       eventClick: function (info) {
         //info.el.style.borderColor = "red";
@@ -51,10 +36,42 @@
         right: "dayGridMonth,timeGridWeek,timeGridDay",
       },
     });
-    calendar.render();
+  }
+
+  const updateData = async () => {
+    data.events = await get_cal_data();
+    data.events.forEach((element) => {
+      if ("completed" in element) {
+        if (element.completed) {
+          element.color = "red";
+        }
+      }
+    });
+    calendar.cal = crearCal(calendar.element);
+    calendar.cal.render();
+  };
+
+  const interval = setInterval(updateData, DATA_TIMEOUT);
+
+  onDestroy(() => {
+    clearInterval(interval);
+  });
+
+  async function cal() {
+    data.events = await get_cal_data();
+    data.events.forEach((element) => {
+      if ("completed" in element) {
+        if (element.completed) {
+          element.color = "red";
+        }
+      }
+    });
+    calendar.cal = crearCal(calendar.element);
+    calendar.cal.render();
   }
 
   onMount(() => {
+    calendar.element = document.getElementById("calendar");
     cal();
   });
 </script>
