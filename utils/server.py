@@ -2,7 +2,7 @@ import os
 import re
 import yaml
 import json
-from datetime import date
+from datetime import date, datetime
 from flask import Flask
 app = Flask(__name__)
 
@@ -35,6 +35,9 @@ def update_db():
                     for key in res: # Yaml returns as a date obj
                         if type(res[key] ) == date:
                             res[key] = res[key].strftime("%Y-%m-%d")
+                            continue
+                        if type(res[key] ) == datetime:
+                            res[key] = res[key].strftime("%Y-%m-%dT%H:%M:%S")
                     try: #Obsidian parses dates as chars
                         res["daysOfWeek"]=[daysOfWeek[element] for element in res["daysOfWeek"]]
                     except:
@@ -50,8 +53,16 @@ def update_db():
                             res["start"]=day+"T"+res["startTime"]+":00"
                             res["end"]=day+"T"+res["endTime"]+":00"
                             delete_keys(res)
+                        elif type(res["startTime"])==int:
+                            hora = int(res["startTime"] / 60)
+                            min = int(res["startTime"] % 60)
+                            res["startTime"]= "{:02d}:{:02d}".format(hora,min)
+                            day = res["date"]
+                            nday = res["endDate"]
+                            res["start"]=day+"T"+res["startTime"]+":00"
+                            res["end"]=nday+"T"+res["endTime"]+":00"
+                            delete_keys(res)
                     arr["events"].append(res.copy())
-    arr["len"]=len(arr["events"])
     r = json.dumps(arr)
     return r
 

@@ -1,17 +1,17 @@
 <script>
   import { onMount } from "svelte";
   import { Calendar } from "fullcalendar";
-  import { invoke } from "@tauri-apps/api/tauri";
-
-  async function get_cal_data() {
-    let str = await invoke("get_cal_data", {});
-    let cal_data = JSON.parse(str);
-    return cal_data.events;
-  }
+  import { get_cal_data } from "./utils";
 
   async function cal() {
-    let events = await get_cal_data();
-    console.log(events);
+    let events = await get_cal_data(false);
+    events.forEach((element) => {
+      if ("completed" in element) {
+        if (element.completed) {
+          element.color = "red";
+        }
+      }
+    });
     const calendarEl = document.getElementById("calendar");
     const calendar = new Calendar(calendarEl, {
       initialView: "dayGridMonth",
