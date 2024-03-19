@@ -19,12 +19,15 @@
         const millis = Date.parse(ElementsList[i].date) - Date.now();
 
         const days = Math.floor(millis / (1000 * 60 * 60 * 24)) + 1;
+        console.log(days);
         ElementsList[i].days_left = days;
         if (ElementsList[i].completed && days <= 0) {
           ElementsList.splice(i, 1);
         }
       }
     }
+
+    ElementsList.sort((a, b) => a.days_left - b.days_left);
   }
 
   get_list();

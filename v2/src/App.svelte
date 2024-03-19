@@ -1,13 +1,15 @@
 <script>
   import { onMount } from "svelte";
-  import Main from "./Main.svelte";
+  //import Main from "./Main.svelte";
+  import Config from "./Config.svelte";
   let container;
   let currentSceneIndex = 1;
-  let scenes = [Main];
+  //let scenes = [Main,Config];
+  let scenes = [Config];
   onMount(() => {
     container = document.getElementById("scenes");
-    let len = scenes.length;
-    container.style.width = `100 * ${len}vw`;
+    let len = 100 * scenes.length;
+    container.style.width = `${len}vw`;
     //container.style.translate = `translateX(calc(-100vw * ${currentSceneIndex}))`;
 
     //container.addEventListener("mousedown", (e) => {
