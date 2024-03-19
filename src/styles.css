@@ -3,7 +3,6 @@
   color: white;
   overflow-y: hidden;
 }
-
 .clock {
   font-size: 15vh;
   transition: all 1s ease-in-out;
@@ -103,4 +102,10 @@
 
 .info-show{
   display: none;
+}
+
+.texto>div{
+  color: black;
+  padding-left: 10%;
+  padding-right: 10%;
 }

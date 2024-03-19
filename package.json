@@ -12,7 +12,8 @@
   "dependencies": {
     "@tauri-apps/api": "^1",
     "fullcalendar": "^6.1.11",
-    "moment": "^2.30.1"
+    "moment": "^2.30.1",
+    "simple-keyboard": "^3.7.67"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^3.0.1",
