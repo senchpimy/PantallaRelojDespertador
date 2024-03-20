@@ -1,51 +1,50 @@
 <script>
   import { onMount } from "svelte";
-  //import Main from "./Main.svelte";
+  import Main from "./Main.svelte";
   import Config from "./Config.svelte";
   let container;
-  let currentSceneIndex = 1;
-  //let scenes = [Main,Config];
-  let scenes = [Config];
+  let currentSceneIndex = 0;
+  let scenes = [Main, Config];
   onMount(() => {
     container = document.getElementById("scenes");
-    let len = 100 * scenes.length;
+    let len = 99 * scenes.length;
     container.style.width = `${len}vw`;
-    //container.style.translate = `translateX(calc(-100vw * ${currentSceneIndex}))`;
+    console.log(container);
 
-    //container.addEventListener("mousedown", (e) => {
-    //  isMouseDown = true;
-    //  startX = e.clientX;
-    //  currentX = startX;
-    //});
+    container.addEventListener("mousedown", (e) => {
+      isMouseDown = true;
+      startX = e.clientX;
+      currentX = startX;
+    });
 
-    //container.addEventListener("mousemove", (e) => {
-    //  if (!isMouseDown) return; // If mouse is not down, do nothing
+    container.addEventListener("mousemove", (e) => {
+      if (!isMouseDown) return; // If mouse is not down, do nothing
 
-    //  const deltaX = e.clientX - currentX;
-    //  currentX = e.clientX;
+      const deltaX = e.clientX - currentX;
+      currentX = e.clientX;
 
-    //  container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex} + ${deltaX}px))`;
-    //});
+      container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex} + ${deltaX}px))`;
+    });
 
-    //container.addEventListener("mouseup", () => {
-    //  if (!isMouseDown) return; // If mouse was not down, do nothing
-    //  isMouseDown = false;
+    container.addEventListener("mouseup", () => {
+      if (!isMouseDown) return; // If mouse was not down, do nothing
+      isMouseDown = false;
 
-    //  const deltaX = currentX - startX;
+      const deltaX = currentX - startX;
 
-    //  if (deltaX > 100 && currentSceneIndex > 0) {
-    //    // Swipe left
-    //    currentSceneIndex--;
-    //    container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
-    //  } else if (deltaX < -100 && currentSceneIndex < 2) {
-    //    // Swipe right
-    //    currentSceneIndex++;
-    //    container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
-    //  } else {
-    //    // Return to original position
-    //    container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
-    //  }
-    //});
+      if (deltaX > 100 && currentSceneIndex > 0) {
+        // Swipe left
+        currentSceneIndex--;
+        container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
+      } else if (deltaX < -100 && currentSceneIndex < 2) {
+        // Swipe right
+        currentSceneIndex++;
+        container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
+      } else {
+        // Return to original position
+        container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
+      }
+    });
   });
 
   let startX = 0;
