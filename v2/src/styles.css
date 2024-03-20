@@ -109,3 +109,18 @@
   padding-left: 10%;
   padding-right: 10%;
 }
+
+.hide-kb{
+  display:none;
+}
+
+#config-container{
+  display: flex;
+}
+#config-container>div{
+  width: 15vw;
+}
+#config-container>button{
+  margin: 2vh;
+  width: 10vw;
+}
