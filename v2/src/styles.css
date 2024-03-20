@@ -41,7 +41,7 @@
   width: 100vw;
   /* Twice the viewport width to accommodate two scenes */
   transition: transform 0.5s ease;
-  user-select: none
+  user-select: none;
   /* Smooth transition */
 }
 
