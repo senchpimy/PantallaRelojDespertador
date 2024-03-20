@@ -1,12 +1,15 @@
 use chrono::{DateTime, Local};
 use lazy_static::lazy_static;
 use reqwest;
-use std::sync::RwLock;
+use serde::{Deserialize, Serialize};
+use std::{
+    ops::{Deref, DerefMut},
+    sync::RwLock,
+};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 struct AppCal {
     port: String,
-    sidd: String,
     server: String,
 }
 
@@ -14,7 +17,6 @@ impl AppCal {
     fn new() -> Self {
         Self {
             port: String::from("8080"),
-            sidd: String::new(),
             server: String::from("localhost"),
         }
     }
@@ -32,10 +34,19 @@ fn time() -> String {
 }
 
 #[tauri::command]
-fn save_data(server: String, port: String) {
+fn save_data(str: String) {
+    let app: AppCal = serde_json::from_str(&str).unwrap();
     let mut writer = GLOBAL_VAR.write().unwrap();
-    writer.server = server;
-    writer.port = port;
+    let r = writer.deref_mut();
+    *r = app;
+    //save to file
+}
+
+#[tauri::command]
+fn get_data() -> String {
+    let reader = GLOBAL_VAR.read().unwrap();
+    let tmp = reader.deref();
+    serde_json::to_string(&tmp).unwrap()
 }
 
 #[tauri::command]
@@ -51,7 +62,12 @@ fn get_cal_data() -> String {
 
 fn main() {
     let app = tauri::Builder::default();
-    app.invoke_handler(tauri::generate_handler![time, get_cal_data, save_data])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    app.invoke_handler(tauri::generate_handler![
+        time,
+        get_cal_data,
+        save_data,
+        get_data
+    ])
+    .run(tauri::generate_context!())
+    .expect("error while running tauri application");
 }
