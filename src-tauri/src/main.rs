@@ -2,10 +2,15 @@ use chrono::{DateTime, Local};
 use lazy_static::lazy_static;
 use reqwest;
 use serde::{Deserialize, Serialize};
+use std::fs;
+use std::fs::File;
+use std::io::prelude::*;
 use std::{
     ops::{Deref, DerefMut},
     sync::RwLock,
 };
+
+static PATH: &str = "/home/plof/.pantallareloj";
 
 #[derive(Debug, Serialize, Deserialize)]
 struct AppCal {
@@ -15,9 +20,17 @@ struct AppCal {
 
 impl AppCal {
     fn new() -> Self {
-        Self {
-            port: String::from("8080"),
-            server: String::from("localhost"),
+        let file = File::open(PATH);
+        match file {
+            Ok(mut file) => {
+                let mut contents = String::new();
+                file.read_to_string(&mut contents).unwrap();
+                serde_json::from_str(&contents).unwrap()
+            }
+            Err(_) => Self {
+                port: String::from("8080"),
+                server: String::from("localhost"),
+            },
         }
     }
 }
@@ -39,7 +52,7 @@ fn save_data(str: String) {
     let mut writer = GLOBAL_VAR.write().unwrap();
     let r = writer.deref_mut();
     *r = app;
-    //save to file
+    fs::write(PATH, &str).expect("Unable to write file");
 }
 
 #[tauri::command]
