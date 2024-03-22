@@ -17,6 +17,12 @@
       currentX = startX;
     });
 
+    container.addEventListener("touchstart", (e) => {
+      startX = e.touches[0].clientX;
+      isMouseDown = true;
+      currentX = startX;
+    });
+
     container.addEventListener("mousemove", (e) => {
       if (!isMouseDown) return; // If mouse is not down, do nothing
 
@@ -26,26 +32,43 @@
       container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex} + ${deltaX}px))`;
     });
 
+    container.addEventListener("touchmove", (e) => {
+      if (!isMouseDown) return;
+
+      const deltaX = e.touches[0].clientX - currentX;
+      currentX = e.touches[0].clientX;
+
+      container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex} + ${deltaX}px))`;
+    });
+
+    container.addEventListener("touchend", () => {
+      handleUp();
+    });
+
     container.addEventListener("mouseup", () => {
-      if (!isMouseDown) return; // If mouse was not down, do nothing
-      isMouseDown = false;
-
-      const deltaX = currentX - startX;
-
-      if (deltaX > 100 && currentSceneIndex > 0) {
-        // Swipe left
-        currentSceneIndex--;
-        container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
-      } else if (deltaX < -100 && currentSceneIndex < 2) {
-        // Swipe right
-        currentSceneIndex++;
-        container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
-      } else {
-        // Return to original position
-        container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
-      }
+      handleUp();
     });
   });
+
+  function handleUp() {
+    if (!isMouseDown) return; // If mouse was not down, do nothing
+    isMouseDown = false;
+
+    const deltaX = currentX - startX;
+
+    if (deltaX > 100 && currentSceneIndex > 0) {
+      // Swipe left
+      currentSceneIndex--;
+      container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
+    } else if (deltaX < -100 && currentSceneIndex < 2) {
+      // Swipe right
+      currentSceneIndex++;
+      container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
+    } else {
+      // Return to original position
+      container.style.transform = `translateX(calc(-100vw * ${currentSceneIndex}))`;
+    }
+  }
 
   let startX = 0;
   let currentX = 0;
