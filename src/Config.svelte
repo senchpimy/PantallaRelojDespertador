@@ -47,6 +47,7 @@
     keyboardPointer.obj_pointer = new Keyboard({
       onKeyPress: (button) => onKeyPress(button),
       theme: "hg-theme-default myTheme1",
+      useTouchEvents: true,
       layout: {
         default: [
           "1 2 3 4 5 6 7 8 9 0 {bksp}",
