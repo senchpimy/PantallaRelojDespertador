@@ -1,0 +1,11 @@
+[package]
+name = "window"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+egui = "0.31"
+eframe = "0.31"
+egui_extras = { version = "0.31", features = ["image","all_loaders","default"] }
+image = { version = "0.25", features = ["jpeg", "png"] } # Add the types you want support for
+pyo3 = { version = "0.20", features = ["auto-initialize"] }
