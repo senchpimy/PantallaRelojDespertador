@@ -3,8 +3,8 @@ from spotipy.oauth2 import SpotifyOAuth
 
 class SpotifyController:
     def __init__(self, 
-                 client_id="",
-                 client_secret="",
+                 client_id="80b7e9d66e364c06b387d6d47bf95dda",
+                 client_secret="88ba5ed9861640179998b859b92f5b8d",
                  redirect_uri="http://localhost:8888/callback",
                  scope="user-modify-playback-state user-read-playback-state"):
         """
