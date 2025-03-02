@@ -9,3 +9,4 @@ eframe = "0.31"
 egui_extras = { version = "0.31", features = ["image","all_loaders","default"] }
 image = { version = "0.25", features = ["jpeg", "png"] } # Add the types you want support for
 pyo3 = { version = "0.20", features = ["auto-initialize"] }
+chrono = "0.4.40"

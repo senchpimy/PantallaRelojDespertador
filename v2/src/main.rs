@@ -3,6 +3,7 @@ use pyo3::prelude::*;
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
+use chrono::Datelike;
 
 fn main() {
     let options = eframe::NativeOptions::default();
@@ -180,7 +181,7 @@ impl eframe::App for MyApp {
         if let Some(transition) = &mut self.transition {
             let dt = now.duration_since(self.last_frame).as_secs_f32();
             self.last_frame = now;
-            let duration = 0.5;
+            let duration = 0.5; // Duración de la transición en segundos
             transition.progress += dt / duration;
             if transition.progress >= 1.0 {
                 self.active_screen = transition.to;
@@ -193,11 +194,11 @@ impl eframe::App for MyApp {
         ctx.request_repaint();
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.label("Pantalla actual:");
-                ui.radio_value(&mut self.active_screen, 0, "1");
-                ui.radio_value(&mut self.active_screen, 1, "2");
-            });
+            //ui.horizontal(|ui| {
+            //    ui.label("Pantalla actual:");
+            //    ui.radio_value(&mut self.active_screen, 0, "1");
+            //    ui.radio_value(&mut self.active_screen, 1, "2");
+            //});
 
             let available_rect = ui.available_rect_before_wrap();
             if let Some(transition) = &self.transition {
@@ -207,31 +208,180 @@ impl eframe::App for MyApp {
                 let new_offset = egui::vec2(old_offset.x - width * transition.direction, 0.0);
 
                 {
+                    // Renderizar la pantalla actual con un desplazamiento
                     let rect = available_rect.translate(old_offset);
                     let mut child = ui.child_ui(rect, egui::Layout::default(), None);
-                    spotify_gui(&mut child, &self.screens[transition.from], &self.py_controller);
+                    if transition.from == 0 {
+                        spotify_gui(&mut child, &self.screens[transition.from], &self.py_controller);
+                    } else {
+                        calendario(&mut child);
+                    }
                 }
                 {
+                    // Renderizar la pantalla de destino con un desplazamiento
                     let rect = available_rect.translate(new_offset);
                     let mut child = ui.child_ui(rect, egui::Layout::default(), None);
-                    spotify_gui(&mut child, &self.screens[transition.to], &self.py_controller);
+                    if transition.to == 0 {
+                        spotify_gui(&mut child, &self.screens[transition.to], &self.py_controller);
+                    } else {
+                        calendario(&mut child);
+                    }
                 }
             } else {
+                // Renderizar la pantalla actual sin transición
                 let mut child = ui.child_ui(available_rect, egui::Layout::default(), None);
-                spotify_gui(&mut child, &self.screens[self.active_screen], &self.py_controller);
+                if self.active_screen == 0 {
+                    spotify_gui(&mut child, &self.screens[self.active_screen], &self.py_controller);
+                } else {
+                    calendario(&mut child);
+                }
             }
 
-            let mut is_shuffle = self.screens[self.active_screen].is_shuffle;
-            if ui.checkbox(&mut is_shuffle, "Shuffle").changed() {
-                self.screens[self.active_screen].is_shuffle = is_shuffle;
-                Python::with_gil(|py| {
-                    let _ = self.py_controller.call_method1(py, "toggle_shuffle", (is_shuffle,));
-                });
+            //let mut is_shuffle = self.screens[self.active_screen].is_shuffle;
+            //if ui.checkbox(&mut is_shuffle, "Shuffle").changed() {
+            //    self.screens[self.active_screen].is_shuffle = is_shuffle;
+            //    Python::with_gil(|py| {
+            //        let _ = self.py_controller.call_method1(py, "toggle_shuffle", (is_shuffle,));
+            //    });
+            //}
+        });
+    }
+}
+
+fn calendario(ui: &mut egui::Ui) {
+    ui.columns(2, |cols| {
+        // Primera columna: calendario
+        cols[0].vertical(|ui| {
+            cal(ui);
+        });
+        // Segunda columna: columna de texto
+        cols[1].vertical(|ui| {
+            // Asignar un ancho mínimo para asegurar que se vea
+            ui.set_min_width(200.0);
+            ui.label("Columna de texto:");
+            ui.separator();
+            ui.label("Información adicional 1");
+            ui.label("Información adicional 2");
+            ui.label("Información adicional 3");
+        });
+    });
+}
+
+fn cal(ui: &mut egui::Ui) {
+
+    // Estado del calendario (mes y año actual)
+    let mut current_date = chrono::Local::now().date_naive();
+    let mut current_month = current_date.month();
+    let mut current_year = current_date.year();
+
+    // Navegación del calendario
+    ui.horizontal(|ui| {
+        if ui.button("◀").clicked() {
+            // Retroceder un mes
+            current_date = current_date.pred_opt().unwrap_or(current_date);
+            current_month = current_date.month();
+            current_year = current_date.year();
+        }
+        ui.label(format!("{} {}", month_name(current_month), current_year));
+        if ui.button("▶").clicked() {
+            // Avanzar un mes
+            current_date = current_date.succ_opt().unwrap_or(current_date);
+            current_month = current_date.month();
+            current_year = current_date.year();
+        }
+    });
+
+    // Mostrar los días del mes
+    let days_in_month = days_in_month(current_month, current_year);
+    let first_day_of_month = chrono::NaiveDate::from_ymd_opt(current_year, current_month, 1)
+        .unwrap()
+        .weekday()
+        .num_days_from_monday(); // 0 = Lunes, 6 = Domingo
+
+    // Tamaño de las celdas (días)
+    let cell_size = egui::vec2(40.0, 40.0); // Ancho y alto de cada celda
+
+    // Mostrar los nombres de los días de la semana
+    ui.columns(7, |columns| {
+        for (i, column) in columns.iter_mut().enumerate() {
+            column.label(weekday_name(i as u32)); // Mostrar los nombres de los días de la semana
+        }
+    });
+
+    let mut day_counter = 1;
+    for _ in 0..6 {
+        // Máximo de 6 filas para cubrir todos los días del mes
+        ui.columns(7, |columns| {
+            for (i, column) in columns.iter_mut().enumerate() {
+                if (i as u32) < first_day_of_month && day_counter == 1 {
+                    // Espacios vacíos antes del primer día del mes
+                    column.label("");
+                } else if day_counter <= days_in_month {
+                    // Mostrar los días del mes
+                    if column
+                        .add_sized(cell_size, egui::Button::new(format!("{}", day_counter)))
+                        .clicked()
+                    {
+                        println!("Día seleccionado: {}", day_counter);
+                    }
+                    day_counter += 1;
+                } else {
+                    // Espacios vacíos después del último día del mes
+                    column.label("");
+                }
             }
         });
     }
 }
 
+// Función para obtener el nombre del mes
+fn month_name(month: u32) -> &'static str {
+    match month {
+        1 => "Enero",
+        2 => "Febrero",
+        3 => "Marzo",
+        4 => "Abril",
+        5 => "Mayo",
+        6 => "Junio",
+        7 => "Julio",
+        8 => "Agosto",
+        9 => "Septiembre",
+        10 => "Octubre",
+        11 => "Noviembre",
+        12 => "Diciembre",
+        _ => "Desconocido",
+    }
+}
+
+// Función para obtener el nombre del día de la semana
+fn weekday_name(weekday: u32) -> &'static str {
+    match weekday {
+        0 => "Lun",
+        1 => "Mar",
+        2 => "Mié",
+        3 => "Jue",
+        4 => "Vie",
+        5 => "Sáb",
+        6 => "Dom",
+        _ => "Desconocido",
+    }
+}
+
+// Función para obtener el número de días en un mes
+fn days_in_month(month: u32, year: i32) -> u32 {
+    match month {
+        4 | 6 | 9 | 11 => 30, // Abril, Junio, Septiembre, Noviembre
+        2 => {
+            // Febrero (considera años bisiestos)
+            if (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) {
+                29
+            } else {
+                28
+            }
+        }
+        _ => 31, // Resto de los meses
+    }
+}
 fn spotify_gui(ui: &mut egui::Ui, screen: &SpotifyScreen, py_controller: &Py<PyAny>) {
     ui.add_space(100.0);
     ui.centered_and_justified(|ui| {
@@ -243,8 +393,20 @@ fn spotify_gui(ui: &mut egui::Ui, screen: &SpotifyScreen, py_controller: &Py<PyA
                     .maintain_aspect_ratio(true)
                     .corner_radius(21.0),
             );
-            ui.label(egui::RichText::new(format!("🎵 {}", screen.current_track)).heading());
-            ui.label(egui::RichText::new(format!("🎤 {}", screen.current_artist)).strong());
+            ui.label(
+                egui::RichText::new(format!("🎵 {}", screen.current_track))
+                    .heading()
+                    .font(egui::FontId::new(24.0, egui::FontFamily::Proportional)),
+            );
+
+            ui.label(
+                egui::RichText::new(format!("🎤 {}", screen.current_artist))
+                    .strong()
+                    .font(egui::FontId::new(20.0, egui::FontFamily::Proportional)),
+            );
+
+            ui.add_space(20.);
+
             ui.horizontal(|ui| {
                 let available_width = ui.available_width();
                 let button_size = egui::vec2(60.0, 60.0);
