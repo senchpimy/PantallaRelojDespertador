@@ -1,9 +1,10 @@
+use chrono::Datelike;
 use eframe::egui;
+use eframe::egui::{Color32, Frame, RichText};
 use pyo3::prelude::*;
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
-use chrono::Datelike;
 
 fn main() {
     let options = eframe::NativeOptions::default();
@@ -33,6 +34,9 @@ struct MyApp {
     swipe_processed: bool,
     transition: Option<Transition>,
     last_frame: Instant,
+
+    calendar_month: u32,
+    calendar_year: i32,
 }
 
 #[derive(Default)]
@@ -64,49 +68,53 @@ impl MyApp {
             let py_controller_clone = py_controller.clone_ref(py);
             let (sender, receiver) = mpsc::channel();
 
-            thread::spawn(move || loop {
-                let state = Python::with_gil(|py| {
-                    let track = py_controller_clone
-                        .call_method0(py, "current_track_name")
-                        .and_then(|m| m.extract(py))
-                        .unwrap_or_else(|_| "No disponible".to_string());
-
-                    let artist = py_controller_clone
-                        .call_method0(py, "artist_name")
-                        .and_then(|m| m.extract(py))
-                        .unwrap_or_else(|_| "No disponible".to_string());
-                    let shuffle = py_controller_clone
-                        .call_method0(py, "get_shuffle_state")
-                        .and_then(|m| m.extract(py))
-                        .unwrap_or(false);
-                    let playing = py_controller_clone
-                        .call_method0(py, "is_playing")
-                        .and_then(|m| m.extract(py))
-                        .unwrap_or(false);
-                    let album_cover = py_controller_clone
-                        .call_method0(py, "album_cover")
-                        .and_then(|m| m.extract(py))
-                        .unwrap_or_else(|_| "https://picsum.photos/seed/1.759706314/1024".to_string());
-                    let progress: f32 = py_controller_clone
-                        .call_method0(py, "playback_progress")
-                        .and_then(|m| m.extract(py))
-                        .unwrap_or(0) as f32
-                        / py_controller_clone
-                            .call_method0(py, "current_track_duration")
+            thread::spawn(move || {
+                loop {
+                    let state = Python::with_gil(|py| {
+                        let track = py_controller_clone
+                            .call_method0(py, "current_track_name")
                             .and_then(|m| m.extract(py))
-                            .unwrap_or(1) as f32;
+                            .unwrap_or_else(|_| "No disponible".to_string());
 
-                    SpotifyState {
-                        track,
-                        artist,
-                        album_cover,
-                        shuffle,
-                        playing,
-                        progress,
-                    }
-                });
-                sender.send(state).ok();
-                thread::sleep(Duration::from_secs(2));
+                        let artist = py_controller_clone
+                            .call_method0(py, "artist_name")
+                            .and_then(|m| m.extract(py))
+                            .unwrap_or_else(|_| "No disponible".to_string());
+                        let shuffle = py_controller_clone
+                            .call_method0(py, "get_shuffle_state")
+                            .and_then(|m| m.extract(py))
+                            .unwrap_or(false);
+                        let playing = py_controller_clone
+                            .call_method0(py, "is_playing")
+                            .and_then(|m| m.extract(py))
+                            .unwrap_or(false);
+                        let album_cover = py_controller_clone
+                            .call_method0(py, "album_cover")
+                            .and_then(|m| m.extract(py))
+                            .unwrap_or_else(|_| {
+                                "https://picsum.photos/seed/1.759706314/1024".to_string()
+                            });
+                        let progress: f32 = py_controller_clone
+                            .call_method0(py, "playback_progress")
+                            .and_then(|m| m.extract(py))
+                            .unwrap_or(0) as f32
+                            / py_controller_clone
+                                .call_method0(py, "current_track_duration")
+                                .and_then(|m| m.extract(py))
+                                .unwrap_or(1) as f32;
+
+                        SpotifyState {
+                            track,
+                            artist,
+                            album_cover,
+                            shuffle,
+                            playing,
+                            progress,
+                        }
+                    });
+                    sender.send(state).ok();
+                    thread::sleep(Duration::from_secs(2));
+                }
             });
 
             Self {
@@ -118,6 +126,8 @@ impl MyApp {
                 swipe_processed: false,
                 transition: None,
                 last_frame: Instant::now(),
+                calendar_month: chrono::Local::now().month(),
+                calendar_year: chrono::Local::now().year(),
             }
         })
     }
@@ -208,13 +218,20 @@ impl eframe::App for MyApp {
                 let new_offset = egui::vec2(old_offset.x - width * transition.direction, 0.0);
 
                 {
-                    // Renderizar la pantalla actual con un desplazamiento
                     let rect = available_rect.translate(old_offset);
                     let mut child = ui.child_ui(rect, egui::Layout::default(), None);
                     if transition.from == 0 {
-                        spotify_gui(&mut child, &self.screens[transition.from], &self.py_controller);
+                        calendario(
+                            &mut child,
+                            &mut self.calendar_month,
+                            &mut self.calendar_year,
+                        );
                     } else {
-                        calendario(&mut child);
+                        spotify_gui(
+                            &mut child,
+                            &self.screens[transition.from],
+                            &self.py_controller,
+                        );
                     }
                 }
                 {
@@ -222,18 +239,34 @@ impl eframe::App for MyApp {
                     let rect = available_rect.translate(new_offset);
                     let mut child = ui.child_ui(rect, egui::Layout::default(), None);
                     if transition.to == 0 {
-                        spotify_gui(&mut child, &self.screens[transition.to], &self.py_controller);
+                        calendario(
+                            &mut child,
+                            &mut self.calendar_month,
+                            &mut self.calendar_year,
+                        );
                     } else {
-                        calendario(&mut child);
+                        spotify_gui(
+                            &mut child,
+                            &self.screens[transition.to],
+                            &self.py_controller,
+                        );
                     }
                 }
             } else {
                 // Renderizar la pantalla actual sin transición
                 let mut child = ui.child_ui(available_rect, egui::Layout::default(), None);
                 if self.active_screen == 0 {
-                    spotify_gui(&mut child, &self.screens[self.active_screen], &self.py_controller);
+                    calendario(
+                        &mut child,
+                        &mut self.calendar_month,
+                        &mut self.calendar_year,
+                    );
                 } else {
-                    calendario(&mut child);
+                    spotify_gui(
+                        &mut child,
+                        &self.screens[self.active_screen],
+                        &self.py_controller,
+                    );
                 }
             }
 
@@ -248,90 +281,146 @@ impl eframe::App for MyApp {
     }
 }
 
-fn calendario(ui: &mut egui::Ui) {
+struct Pendiente {
+    titulo: String,
+    fecha: String,
+    descripion: Option<String>,
+}
+
+fn calendario(ui: &mut egui::Ui, calendar_month: &mut u32, calendar_year: &mut i32) {
     ui.columns(2, |cols| {
-        // Primera columna: calendario
         cols[0].vertical(|ui| {
-            cal(ui);
+            cal(ui, calendar_month, calendar_year);
         });
-        // Segunda columna: columna de texto
         cols[1].vertical(|ui| {
-            // Asignar un ancho mínimo para asegurar que se vea
+            let time = chrono::offset::Local::now().format("%H:%M").to_string();
+            ui.vertical_centered(|ui| {
+                ui.label(
+                    egui::RichText::new(time)
+                        .strong()
+                        .font(egui::FontId::new(160.0, egui::FontFamily::Proportional)),
+                );
+            });
             ui.set_min_width(200.0);
             ui.label("Columna de texto:");
             ui.separator();
-            ui.label("Información adicional 1");
-            ui.label("Información adicional 2");
-            ui.label("Información adicional 3");
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                ui.spacing_mut().item_spacing = egui::Vec2::new(100.0, 50.0); // 10px horizontal, 20px vertical
+                ui.separator();
+                for _ in 0..30 {
+                    let frame = Frame::new()
+                        .fill(Color32::from_rgb(45, 45, 45)) // Color del rectángulo
+                        .corner_radius(5.0)
+                        .inner_margin(egui::Margin::same(10));
+                    ui.vertical_centered(|ui| {
+                        frame.show(ui, |ui| {
+                            ui.spacing_mut().item_spacing = egui::Vec2::new(0.0, 1.0); // 10px horizontal, 20px vertical
+                            ui.label(
+                                egui::RichText::new("Tarea")
+                                    .strong()
+                                    .font(egui::FontId::new(40.0, egui::FontFamily::Proportional)),
+                            );
+                            ui.label(
+                                RichText::new(
+                                    r"
+sadsjhasdsghdghdasghdsaahkdsadsjhasdsghdghdasghdsaahkd
+sadsjhasdsghdghdasghdsaahkdsadsjhasdsghdghdasghdsaahkd
+Texto dentro del rectángulo",
+                                )
+                                .color(Color32::WHITE),
+                            );
+                        });
+                    });
+                }
+            });
         });
     });
 }
 
-fn cal(ui: &mut egui::Ui) {
-
-    // Estado del calendario (mes y año actual)
+fn cal(ui: &mut egui::Ui, calendar_month: &mut u32, calendar_year: &mut i32) {
     let mut current_date = chrono::Local::now().date_naive();
-    let mut current_month = current_date.month();
-    let mut current_year = current_date.year();
+    let mut current_month = *calendar_month;
+    let mut current_year = *calendar_year;
 
-    // Navegación del calendario
-    ui.horizontal(|ui| {
-        if ui.button("◀").clicked() {
-            // Retroceder un mes
-            current_date = current_date.pred_opt().unwrap_or(current_date);
-            current_month = current_date.month();
-            current_year = current_date.year();
-        }
-        ui.label(format!("{} {}", month_name(current_month), current_year));
-        if ui.button("▶").clicked() {
-            // Avanzar un mes
-            current_date = current_date.succ_opt().unwrap_or(current_date);
-            current_month = current_date.month();
-            current_year = current_date.year();
-        }
-    });
+    let total_height = ui.available_height();
 
-    // Mostrar los días del mes
-    let days_in_month = days_in_month(current_month, current_year);
-    let first_day_of_month = chrono::NaiveDate::from_ymd_opt(current_year, current_month, 1)
-        .unwrap()
-        .weekday()
-        .num_days_from_monday(); // 0 = Lunes, 6 = Domingo
-
-    // Tamaño de las celdas (días)
-    let cell_size = egui::vec2(40.0, 40.0); // Ancho y alto de cada celda
-
-    // Mostrar los nombres de los días de la semana
-    ui.columns(7, |columns| {
-        for (i, column) in columns.iter_mut().enumerate() {
-            column.label(weekday_name(i as u32)); // Mostrar los nombres de los días de la semana
-        }
-    });
-
-    let mut day_counter = 1;
-    for _ in 0..6 {
-        // Máximo de 6 filas para cubrir todos los días del mes
-        ui.columns(7, |columns| {
-            for (i, column) in columns.iter_mut().enumerate() {
-                if (i as u32) < first_day_of_month && day_counter == 1 {
-                    // Espacios vacíos antes del primer día del mes
-                    column.label("");
-                } else if day_counter <= days_in_month {
-                    // Mostrar los días del mes
-                    if column
-                        .add_sized(cell_size, egui::Button::new(format!("{}", day_counter)))
-                        .clicked()
-                    {
-                        println!("Día seleccionado: {}", day_counter);
-                    }
-                    day_counter += 1;
+    let frame_ui = |ui: &mut egui::Ui| {
+        ui.horizontal(|ui| {
+            if ui.button("◀").clicked() {
+                if current_month == 1 {
+                    current_month = 12;
+                    current_year -= 1;
                 } else {
-                    // Espacios vacíos después del último día del mes
-                    column.label("");
+                    current_month -= 1;
                 }
+                *calendar_month = current_month; // Actualizar el mes
+                *calendar_year = current_year; // Actualizar el año
+            }
+            ui.label(format!("{} {}", month_name(current_month), current_year));
+            if ui.button("▶").clicked() {
+                if current_month == 12 {
+                    current_month = 1;
+                    current_year += 1;
+                } else {
+                    current_month += 1;
+                }
+                *calendar_month = current_month; // Actualizar el mes
+                *calendar_year = current_year; // Actualizar el año
             }
         });
-    }
+
+        let days_in_month = days_in_month(current_month, current_year);
+        let first_day_of_month = chrono::NaiveDate::from_ymd_opt(current_year, current_month, 1)
+            .unwrap()
+            .weekday()
+            .num_days_from_monday(); // 0 = Lunes, 6 = Domingo
+
+        let cell_size = egui::vec2(40.0, total_height * 0.08); // Ancho y alto de cada celda
+
+        ui.columns(7, |columns| {
+            for (i, column) in columns.iter_mut().enumerate() {
+                column.label(weekday_name(i as u32)); // Mostrar los nombres de los días de la semana
+            }
+        });
+
+        let mut day_counter = 1;
+        for _ in 0..6 {
+            // Máximo de 6 filas para cubrir todos los días del mes
+            ui.columns(7, |columns| {
+                for (i, column) in columns.iter_mut().enumerate() {
+                    if (i as u32) < first_day_of_month && day_counter == 1 {
+                        // Espacios vacíos antes del primer día del mes
+                        column.label("");
+                    } else if day_counter <= days_in_month {
+                        // Mostrar los días del mes
+                        if column
+                            .add_sized(cell_size, egui::Button::new(format!("{}", day_counter)))
+                            .clicked()
+                        {
+                            println!("Día seleccionado: {}", day_counter);
+                        }
+                        day_counter += 1;
+                    } else {
+                        // Espacios vacíos después del último día del mes
+                        column.label("");
+                    }
+                }
+            });
+        }
+    };
+    ui.add_space(total_height * 0.2);
+    Frame::new()
+        .fill(Color32::from_rgb(32, 32, 32))
+        .corner_radius(10)
+        .shadow(egui::Shadow {
+            offset: [0, 0],
+            blur: 20,
+            spread: 0,
+            color: Color32::from_rgba_unmultiplied(0, 0, 0, 120),
+        })
+        .inner_margin(10)
+        .outer_margin(50)
+        .show(ui, frame_ui);
 }
 
 // Función para obtener el nombre del mes
@@ -439,7 +528,9 @@ fn spotify_gui(ui: &mut egui::Ui, screen: &SpotifyScreen, py_controller: &Py<PyA
                 }
             });
             ui.add_space(30.0);
-            ui.add(egui::ProgressBar::new(screen.progress).desired_width(ui.available_width() * 0.8));
+            ui.add(
+                egui::ProgressBar::new(screen.progress).desired_width(ui.available_width() * 0.8),
+            );
         });
     });
 }
